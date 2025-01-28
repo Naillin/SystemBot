@@ -37,6 +37,7 @@ _ReSharper.Caches/
 !nuget.config
 
 ## Другое ##
+config.ini
 *.log
 *.dotCover
 *.pidb
