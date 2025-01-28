@@ -53,7 +53,7 @@ namespace SystemBot
 		private static ITelegramBotClient? _botClient;
 		static async Task Main(string[] args)
 		{
-			logger.Info($"Starting...");
+			logger.Info($"Starting......");
 			initConfig();
 			logger.Info(configTextDefault);
 
