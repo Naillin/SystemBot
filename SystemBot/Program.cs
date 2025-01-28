@@ -53,13 +53,13 @@ namespace SystemBot
 		private static ITelegramBotClient? _botClient;
 		static async Task Main(string[] args)
 		{
-			logger.Info($"Starting......");
+			logger.Info($"Starting...");
 			initConfig();
 			logger.Info(configTextDefault);
 
 			_botClient = new TelegramBotClient(_token);
 
-			logger.Info($"Done!!!!!");
+			logger.Info($"Done!");
 		}
 	}
 }
