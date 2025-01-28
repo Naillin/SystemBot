@@ -59,7 +59,7 @@ namespace SystemBot
 
 			_botClient = new TelegramBotClient(_token);
 
-			logger.Info($"Done!");
+			logger.Info($"Done!!!!!");
 		}
 	}
 }
