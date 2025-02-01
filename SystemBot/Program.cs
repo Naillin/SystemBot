@@ -13,7 +13,7 @@ namespace SystemBot
 	internal class Program
 	{
 
-        private static readonly string moduleName = "SystemBot.Program";
+        private static readonly string moduleName = "Program";
         private static readonly Logger baseLogger = LogManager.GetLogger(moduleName);
         private static readonly LoggerManager logger = new LoggerManager(baseLogger, moduleName);
 
@@ -54,7 +54,7 @@ namespace SystemBot
 
             configTextDefault = $"TOKEN = [{_token}]\r\n" +
                                 $"EXAMPLE1 = [{EXAMPLE1}]";
-        }
+		}
 
         
         static async Task Main(string[] args)
