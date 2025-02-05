@@ -50,7 +50,7 @@ namespace SystemBot
 			double idle = double.Parse(output);
 			double result = 100.0 - idle;
 
-			logger.Info($"CPU Load: {result}");
+			logger.Info($"CPU Load: {result}.");
 
 			return result;
 		}
@@ -64,7 +64,7 @@ namespace SystemBot
 			string output = ExecuteCommand("cat /sys/class/thermal/thermal_zone0/temp");
 			double result = double.Parse(output) / 1000.0;
 
-			logger.Info($"CPU Temperature: {result}");
+			logger.Info($"CPU Temperature: {result}.");
 
 			return result;
 		}
@@ -78,7 +78,7 @@ namespace SystemBot
 			string output = ExecuteCommand("free -m | grep Mem | awk '{print $3/$2 * 100.0}'");
 			double result = double.Parse(output);
 
-			logger.Info($"RAM Usage: {result}");
+			logger.Info($"RAM Usage: {result}.");
 
 			return result;
 		}
@@ -111,12 +111,12 @@ namespace SystemBot
 			}
 			catch (Exception ex)
 			{
-				logger.Error($"Ошибка: {ex.Message}");
+				logger.Error($"Ошибка: {ex.Message}.");
 
 				return result;
 			}
 
-			logger.Info($"DISK Usage: {result}");
+			logger.Info($"DISK Usage: {result}.");
 
 			return result;
 		}
@@ -172,6 +172,11 @@ namespace SystemBot
 				_statusType = statusType;
 				_date = data;
 			}
+
+			public override string ToString()
+			{
+				return $"Status: {_statusType} from {_date}.";
+			}
 		}
 
 		/// <summary>
@@ -215,13 +220,13 @@ namespace SystemBot
 					result._date = downtime;
 				}
 
-				logger.Info($"Status of service {serviceName}: {result._statusType} from {result._date}");
+				logger.Info($"Status of service {serviceName}: {result._statusType} from {result._date}.");
 			}
 			catch (Exception ex)
 			{
 				result._statusType = StatusType.ERROR;
 				result._date = ex.Message;
-				logger.Error($"Error while checking status of service {serviceName}: {ex.Message}");
+				logger.Error($"Error while checking status of service {serviceName}: {ex.Message}.");
 			}
 
 			return result;
@@ -247,5 +252,27 @@ namespace SystemBot
 
 			return dataUnits;
 		}
-    }
+
+		/// <summary>
+		/// Перезагружает сервер.
+		/// </summary>
+		/// <param name="delaySeconds">Задержка в секундах.</param>
+		public void RestartServer(int delaySeconds)
+		{
+			Console.WriteLine($"Перезагрузка через {delaySeconds} секунд...");
+			Thread.Sleep(delaySeconds * 1000);
+			ExecuteCommand("sudo reboot");
+		}
+
+		/// <summary>
+		/// Выключает сервер.
+		/// </summary>
+		/// <param name="delaySeconds">Задержка в секундах.</param>
+		public void ShutdownServer(int delaySeconds)
+		{
+			Console.WriteLine($"Выключение через {delaySeconds} секунд...");
+			Thread.Sleep(delaySeconds * 1000);
+			ExecuteCommand("sudo poweroff");
+		}
+	}
 }
