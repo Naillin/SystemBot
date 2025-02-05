@@ -29,7 +29,6 @@ namespace SystemBot
 
 		private const string filePathConfig = "config.ini";
 		private static string configTextDefault = string.Empty;
-		private static IReplyMarkup? replyKeyboard = null;
 		private static void initConfig()
 		{
 			FileIniDataParser parser = new FileIniDataParser();
@@ -79,67 +78,72 @@ namespace SystemBot
 			string serviceName = "";
 			string[] servicesName = new string[0];
 
-			if (update.Message?.Text == "/start")
+			var replyKeyboard = new ReplyKeyboardMarkup(
+			new List<KeyboardButton[]>()
 			{
-				await client.SendMessage(update.Message.Chat.Id, "Здравствуйте, это бля бот!");
-				var replyKeyboard = new ReplyKeyboardMarkup(
-					new List<KeyboardButton[]>()
-					{
-						new KeyboardButton[]
-						{
-							new KeyboardButton("Загрузка CPU"),
-							new KeyboardButton("Температура CPU"),
-						},
-						new KeyboardButton[]
-						{
-							new KeyboardButton("Загрузка RAM"),
-							new KeyboardButton("Загрузка диска"),
-						},
-						new KeyboardButton[]
-						{
-							new KeyboardButton("Статус сервиса"),
-							new KeyboardButton("Статус сервисов"),
-						},
-						new KeyboardButton[]
-						{
-							new KeyboardButton("Выход")
-						}
-					})
+				new KeyboardButton[]
 				{
-					ResizeKeyboard = true,
-				};
-				await client.SendMessage(update.Message.Chat.Id, "Выберите действие", replyMarkup: replyKeyboard);
+					new KeyboardButton("Загрузка CPU"),
+					new KeyboardButton("Температура CPU"),
+				},
+				new KeyboardButton[]
+				{
+					new KeyboardButton("Загрузка RAM"),
+					new KeyboardButton("Загрузка диска"),
+				},
+				new KeyboardButton[]
+				{
+					new KeyboardButton("Статус сервиса"),
+					new KeyboardButton("Статус сервисов"),
+				},
+				new KeyboardButton[]
+				{
+					new KeyboardButton("Выход")
+				}
+			})
+			{
+				ResizeKeyboard = true,
+			};
+			switch (update.Message?.Text)
+			{
+				case "/start":
+					await client.SendMessage(update.Message.Chat.Id, "Здравствуйте, это бля бот!");
 
-			}
-			if (update.Message?.Text == "Загрузка CPU")
-			{
-				double cpuLoad = Math.Round(systemTools.GetCpuLoad(), 0);// че то типа такого
-				await client.SendMessage(update.Message.Chat.Id, $"{cpuLoad.ToString()} %", replyMarkup: replyKeyboard).ConfigureAwait(false);
-			}
-			if (update.Message?.Text == "Температура CPU")
-			{
-				await client.SendMessage(update.Message.Chat.Id, Convert.ToString(systemTools.GetCpuTemperature()), replyMarkup: replyKeyboard).ConfigureAwait(false);
-			}
-			if (update.Message?.Text == "Загрузка RAM")
-			{
-				await client.SendMessage(update.Message.Chat.Id, Convert.ToString(systemTools.GetRamUsage()), replyMarkup: replyKeyboard).ConfigureAwait(false);
-			}
-			if (update.Message?.Text == "Загрузка диска")
-			{
-				await client.SendMessage(update.Message.Chat.Id, Convert.ToString(systemTools.GetDiskUsage()), replyMarkup: replyKeyboard).ConfigureAwait(false);
-			}
-			if (update.Message?.Text == "Статус сервиса")
-			{
-				await client.SendMessage(update.Message.Chat.Id, systemTools.GetServiceStatus(serviceName).ToString(), replyMarkup: replyKeyboard).ConfigureAwait(false); //не требуется парсинг строки, так как ToString() в DataUnit берет это на себя 
-			}
-			if (update.Message?.Text == "Статус сервисов")
-			{
-				DataUnit[] dataUnits = systemTools.GetServicesStatus(servicesName);
-				await client.SendMessage(update.Message.Chat.Id, string.Join(Environment.NewLine, dataUnits), replyMarkup: replyKeyboard).ConfigureAwait(false); // у объекта DataUnit есть строчное представление, так как существует ToString() в DataUnit. потому нам достаточно просто соединить все элементы массива в одну строку через нужный нам символ.
-			}
-			if (update.Message?.Text == "Выход")
-			{
-				await client.SendMessage(update.Message.Chat.Id, "Клавиатура скрыта", replyMarkup: new ReplyKeyboardRemove()).ConfigureAwait(false);
+					await client.SendMessage(update.Message.Chat.Id, "Выберите действие", replyMarkup: replyKeyboard);
+					break;
+				case "Загрузка CPU":
+					double cpuLoad = Math.Round(systemTools.GetCpuLoad(), 0);
+					await client.SendMessage(update.Message.Chat.Id, Convert.ToString(cpuLoad), replyMarkup: replyKeyboard);
+					break;
+
+				case "Температура CPU":
+					await client.SendMessage(update.Message.Chat.Id, Convert.ToString(systemTools.GetCpuTemperature()), replyMarkup: replyKeyboard);
+					break;
+
+				case "Загрузка RAM":
+					await client.SendMessage(update.Message.Chat.Id, Convert.ToString(systemTools.GetRamUsage()), replyMarkup: replyKeyboard);
+					break;
+
+				case "Загрузка диска":
+					await client.SendMessage(update.Message.Chat.Id, Convert.ToString(systemTools.GetDiskUsage()), replyMarkup: replyKeyboard);
+					break;
+
+				case "Статус сервиса":
+					await client.SendMessage(update.Message.Chat.Id, systemTools.GetServiceStatus(serviceName).ToString(), replyMarkup: replyKeyboard);
+					break;
+
+				case "Статус сервисов":
+					DataUnit[] dataUnits = systemTools.GetServicesStatus(servicesName);
+					await client.SendMessage(update.Message.Chat.Id, string.Join(Environment.NewLine, dataUnits), replyMarkup: replyKeyboard);
+					break;
+
+				case "Выход":
+					await client.SendMessage(update.Message.Chat.Id, "Клавиатура скрыта", replyMarkup: new ReplyKeyboardRemove());
+					break;
+
+				default:
+					// Обработка случая, когда текст сообщения не соответствует ни одному из условий
+					break;
 			}
 		}
 	}
