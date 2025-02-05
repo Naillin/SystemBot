@@ -10,9 +10,8 @@ using System;
 
 namespace SystemBot
 {
-	internal class Program
-	{
-
+    internal class Program
+    {
         private static readonly string moduleName = "Program";
         private static readonly Logger baseLogger = LogManager.GetLogger(moduleName);
         private static readonly LoggerManager logger = new LoggerManager(baseLogger, moduleName);
@@ -29,6 +28,7 @@ namespace SystemBot
 
         private const string filePathConfig = "config.ini";
         private static string configTextDefault = string.Empty;
+        private static IReplyMarkup? replyKeyboard = null;
         private static void initConfig()
         {
             FileIniDataParser parser = new FileIniDataParser();
@@ -54,41 +54,90 @@ namespace SystemBot
 
             configTextDefault = $"TOKEN = [{_token}]\r\n" +
                                 $"EXAMPLE1 = [{EXAMPLE1}]";
-		}
-
-        
+        }
         static async Task Main(string[] args)
-		{
-			logger.Info($"Starting...");
-			initConfig();
-			logger.Info(configTextDefault);
-            
-			logger.Info($"Done!");
+        {
+            logger.Info($"Starting...");
+            initConfig();
+            logger.Info(configTextDefault);
+
+            logger.Info($"Done!");
 
             Host bot = new Host(_token);
             bot.Start();
             bot.OnMessage += OnMessage;
-
-            Console.ReadLine();
 
             await Task.CompletedTask;
         }
 
         private static async void OnMessage(ITelegramBotClient client, Update update)
         {
+            SystemTools systemTools = new SystemTools();
+
+            string serviceName = "";
+            string[] servicesName = [""];
+
             if (update.Message?.Text == "/start")
             {
                 await client.SendMessage(update.Message.Chat.Id, "Здравствуйте, это бля бот!");
-                var replyKeyboard = new ReplyKeyboardMarkup(true).AddButton("Убрать клавиатуру");
-
+                var replyKeyboard = new ReplyKeyboardMarkup(
+                    new List<KeyboardButton[]>()
+                    {
+                        new KeyboardButton[]
+                        {
+                            new KeyboardButton("Загрузка CPU"),
+                            new KeyboardButton("Температура CPU"),
+                        },
+                        new KeyboardButton[]
+                        {
+                            new KeyboardButton("Загрузка RAM"),
+                            new KeyboardButton("Загрузка диска"),
+                        },
+                        new KeyboardButton[]
+                        {
+                            new KeyboardButton("Статус сервиса"),
+                            new KeyboardButton("Статус сервисов"),
+                        },
+                        new KeyboardButton[]
+                        {
+                            new KeyboardButton("Выход")
+                        }
+                    })
+                {
+                    ResizeKeyboard = true,
+                };
                 await client.SendMessage(update.Message.Chat.Id, "Выберите действие", replyMarkup: replyKeyboard);
 
             }
-            else if (update.Message?.Text == "Убрать клавиатуру")
+            if (update.Message?.Text == "Загрузка CPU")
             {
-                await client.SendMessage(update.Message.Chat.Id, "Клавиатура убрана", replyMarkup: new ReplyKeyboardRemove()).ConfigureAwait(false);
+                await client.SendMessage(update.Message.Chat.Id, Convert.ToString(systemTools.GetCpuLoad()), replyMarkup: replyKeyboard).ConfigureAwait(false);
             }
-            
+            if (update.Message?.Text == "Температура CPU")
+            {
+                await client.SendMessage(update.Message.Chat.Id, Convert.ToString(systemTools.GetCpuTemperature()), replyMarkup: replyKeyboard).ConfigureAwait(false);
+            }
+            if (update.Message?.Text == "Загрузка RAM")
+            {
+                await client.SendMessage(update.Message.Chat.Id, Convert.ToString(systemTools.GetRamUsage()), replyMarkup: replyKeyboard).ConfigureAwait(false);
+            }
+            if (update.Message?.Text == "Загрузка диска")
+            {
+                await client.SendMessage(update.Message.Chat.Id, Convert.ToString(systemTools.GetDiskUsage()), replyMarkup: replyKeyboard).ConfigureAwait(false);
+            }
+            if (update.Message?.Text == "Статус сервиса")
+            {
+                await client.SendMessage(update.Message.Chat.Id, Convert.ToString(systemTools.GetServiceStatus(serviceName)), replyMarkup: replyKeyboard).ConfigureAwait(false);//???????????????????
+            }
+            if (update.Message?.Text == "Статус сервисов")
+            {
+                await client.SendMessage(update.Message.Chat.Id, Convert.ToString(systemTools.GetServicesStatus(servicesName)), replyMarkup: replyKeyboard).ConfigureAwait(false);//???????????????????
+            }
+            if (update.Message?.Text == "Выход")
+            {
+                await client.SendMessage(update.Message.Chat.Id, "Клавиатура скрыта", replyMarkup: new ReplyKeyboardRemove()).ConfigureAwait(false);
+            }
+
         }
     }
 }
