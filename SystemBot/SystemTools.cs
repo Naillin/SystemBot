@@ -259,7 +259,7 @@ namespace SystemBot
 		/// <param name="delaySeconds">Задержка в секундах.</param>
 		public void RestartServer(int delaySeconds)
 		{
-			Console.WriteLine($"Перезагрузка через {delaySeconds} секунд...");
+			logger.Info($"Перезагрузка через {delaySeconds} секунд...");
 			Thread.Sleep(delaySeconds * 1000);
 			ExecuteCommand("sudo reboot");
 		}
@@ -270,7 +270,7 @@ namespace SystemBot
 		/// <param name="delaySeconds">Задержка в секундах.</param>
 		public void ShutdownServer(int delaySeconds)
 		{
-			Console.WriteLine($"Выключение через {delaySeconds} секунд...");
+			logger.Info($"Выключение через {delaySeconds} секунд...");
 			Thread.Sleep(delaySeconds * 1000);
 			ExecuteCommand("sudo poweroff");
 		}
