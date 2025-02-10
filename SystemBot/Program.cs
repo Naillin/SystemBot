@@ -101,10 +101,6 @@ namespace SystemBot
             {
 				await commandHandler(client, update.Message);
 			}
-			else
-			{
-				await client.SendMessage(update.Message.Chat.Id, "Неизвестная команда.");
-			}
 		}
 
 		// Обработчики команд
