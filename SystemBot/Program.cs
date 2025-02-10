@@ -96,9 +96,9 @@ namespace SystemBot
 			if (update.Message == null)
 				return;
 
-            // Проверяем, есть ли команда в словаре
-            if (update.Message.Text != null && _commands.TryGetValue(update.Message.Text, out var commandHandler))
-            {
+			// Проверяем, есть ли команда в словаре
+			if (update.Message.Text != null && _commands.TryGetValue(update.Message.Text, out var commandHandler))
+			{
 				await commandHandler(client, update.Message);
 			}
 		}
