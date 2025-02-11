@@ -28,11 +28,12 @@ namespace SystemBot
 				return _token;
 			}
 		}
-		public static int EXAMPLE1 { get; set; } = 6;
+		private static int ADMIN_ID { get; set; } = 0;
 
 		private const string filePathConfig = "config.ini";
 		private static string configTextDefault = string.Empty;
 
+		private static Dictionary<string, string> Services = new Dictionary<string, string>();
 		private static void initConfig()
 		{
 			FileIniDataParser parser = new FileIniDataParser();
@@ -43,7 +44,7 @@ namespace SystemBot
 
 				IniData data = parser.ReadFile(filePathConfig);
 				_token = data["Settings"]["TOKEN"];
-				EXAMPLE1 = Convert.ToInt32(data["Settings"]["EXAMPLE1"]);
+				ADMIN_ID = Convert.ToInt32(data["Settings"]["ADMIN_ID"]);
 			}
 			else
 			{
@@ -52,12 +53,16 @@ namespace SystemBot
 				IniData data = new IniData();
 				data.Sections.AddSection("Settings");
 				data["Settings"]["TOKEN"] = _token.ToString();
-				data["Settings"]["EXAMPLE1"] = EXAMPLE1.ToString();
+				data["Settings"]["ADMIN_ID"] = ADMIN_ID.ToString();
+
 				parser.WriteFile(filePathConfig, data);
 			}
 
 			configTextDefault = $"TOKEN = [{_token}]\r\n" +
-								$"EXAMPLE1 = [{EXAMPLE1}]";
+								$"ADMIN_ID = [{ADMIN_ID}]";
+
+			//запись из JSON массива
+			
 		}
 
 		static async Task Main(string[] args)
@@ -85,7 +90,7 @@ namespace SystemBot
 			{ "Загрузка RAM", RamUsageOperation },
 			{ "Загрузка диска", DiskUsageOperation },
 			{ "Статус сервиса", ServiceStatusOperation },
-			{ "Статус сервисов", ServicesStatusOperation },
+			//{ "Статус сервисов", ServicesStatusOperation },
 			{ "Перезагрузка сервера", RestartServerOperation },
 			{ "Выключение сервера", ShutdownServerOperation },
 			{ "Выход", HandleRemoveKeyboard }
@@ -183,26 +188,27 @@ namespace SystemBot
 			await client.SendMessage(message.Chat.Id, "Вы выбрали Загрузка диска");
 			await client.SendMessage(message.Chat.Id, $"Диск загружен на {diskUsage}%");
 		}
+
 		private static async Task ServiceStatusOperation(ITelegramBotClient client, Message message)
 		{
 			SystemTools systemTools = new SystemTools();
-			string? serviceName = "";
+			string serviceName = string.Empty;
 			DataUnit dataUnit = systemTools.GetServiceStatus(serviceName);
 			await client.SendMessage(message.Chat.Id, "Вы выбрали Статус сервиса");
 			await client.SendMessage(message.Chat.Id, $"Статус сервиса: {dataUnit}");
 		}
-		private static async Task ServicesStatusOperation(ITelegramBotClient client, Message message)
-		{
-			string[] servicesName = new string[0];
-			SystemTools systemTools = new SystemTools();
-			DataUnit[] dataUnits = systemTools.GetServicesStatus(servicesName);
-			await client.SendMessage(message.Chat.Id, "Вы выбрали Статус сервисов");
-			await client.SendMessage(message.Chat.Id, $"Статус сервисов: {string.Join(Environment.NewLine, dataUnits)}");
-		}
+		//private static async Task ServicesStatusOperation(ITelegramBotClient client, Message message)
+		//{
+		//	string[] servicesName = new string[0];
+		//	SystemTools systemTools = new SystemTools();
+		//	DataUnit[] dataUnits = systemTools.GetServicesStatus(servicesName);
+		//	await client.SendMessage(message.Chat.Id, "Вы выбрали Статус сервисов");
+		//	await client.SendMessage(message.Chat.Id, $"Статус сервисов: {string.Join(Environment.NewLine, dataUnits)}");
+		//}
 		private static async Task RestartServerOperation(ITelegramBotClient client, Message message)
 		{
 			SystemTools systemTools = new SystemTools();
-			int delaySecondsRestart = 0;
+			int delaySecondsRestart = 300;
 			systemTools.RestartServer(delaySecondsRestart);
 			await client.SendMessage(message.Chat.Id, "Вы выбрали Перезагрузка сервера");
 			await client.SendMessage(message.Chat.Id, $"Сервер перезагружается через {delaySecondsRestart} секунд");
@@ -210,7 +216,7 @@ namespace SystemBot
 		private static async Task ShutdownServerOperation(ITelegramBotClient client, Message message)
 		{
 			SystemTools systemTools = new SystemTools();
-			int delaySecondsShutDown = 0;
+			int delaySecondsShutDown = 300;
 			systemTools.ShutdownServer(delaySecondsShutDown);
 			await client.SendMessage(message.Chat.Id, "Вы выбрали Выключение сервера");
 			await client.SendMessage(message.Chat.Id, $"Сервер выключается через {delaySecondsShutDown} секунд");
