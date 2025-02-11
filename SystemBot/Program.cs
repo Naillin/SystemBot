@@ -93,13 +93,27 @@ namespace SystemBot
 
 		private static async void OnMessage(ITelegramBotClient client, Update update)
 		{
-			if (update.Message == null)
-				return;
-
-			// Проверяем, есть ли команда в словаре
-			if (update.Message.Text != null && _commands.TryGetValue(update.Message.Text, out var commandHandler))
+			try
 			{
-				await commandHandler(client, update.Message);
+				if (update.Message == null)
+				{
+					return;
+				}
+				// Проверяем, есть ли команда в словаре
+				if (update.Message.Text != null && _commands.TryGetValue(update.Message.Text, out var commandHandler))
+				{
+					await commandHandler(client, update.Message);
+				}
+			}
+			catch 
+			{
+				if (update.Message == null)
+				{  
+					return; 
+				}
+
+				await client.SendMessage(update.Message.Chat.Id, "Ошибка! Возможно сервер не работает или выключен, попробуйте позже.");
+				await client.SendMessage(update.Message.Chat.Id, "Клавиатура скрыта.", replyMarkup: new ReplyKeyboardRemove());
 			}
 		}
 
@@ -151,27 +165,31 @@ namespace SystemBot
 		private static async Task CpuTempOperation(ITelegramBotClient client, Message message)
 		{
 			SystemTools systemTools = new SystemTools();
+			double cpuTemp = Math.Round(systemTools.GetCpuTemperature(), 0);
 			await client.SendMessage(message.Chat.Id, "Вы выбрали Температура CPU");
-			await client.SendMessage(message.Chat.Id, "Температура CPU составляет " + systemTools.GetCpuTemperature().ToString() + "°C");
+			await client.SendMessage(message.Chat.Id, "Температура CPU составляет " + cpuTemp.ToString() + "°C");
 		}
 		private static async Task RamUsageOperation(ITelegramBotClient client, Message message)
 		{
 			SystemTools systemTools = new SystemTools();
+			double ramUsage = Math.Round(systemTools.GetRamUsage(), 0);
 			await client.SendMessage(message.Chat.Id, "Вы выбрали Загрузка RAM");
-			await client.SendMessage(message.Chat.Id, "CPU загружен на " + systemTools.GetRamUsage().ToString() + "%");
+			await client.SendMessage(message.Chat.Id, "CPU загружен на " + ramUsage.ToString() + "%");
 		}
 		private static async Task DiskUsageOperation(ITelegramBotClient client, Message message)
 		{
 			SystemTools systemTools = new SystemTools();
+			double diskUsage = Math.Round(systemTools.GetDiskUsage(), 0);
 			await client.SendMessage(message.Chat.Id, "Вы выбрали Загрузка диска");
-			await client.SendMessage(message.Chat.Id, "Диск загружен на " + systemTools.GetDiskUsage().ToString() + "%");
+			await client.SendMessage(message.Chat.Id, "Диск загружен на " + diskUsage.ToString() + "%");
 		}
 		private static async Task ServiceStatusOperation(ITelegramBotClient client, Message message)
 		{
 			SystemTools systemTools = new SystemTools();
-			string serviceName = "";
+			string? serviceName = "";
+			DataUnit dataUnit = systemTools.GetServiceStatus(serviceName);
 			await client.SendMessage(message.Chat.Id, "Вы выбрали Статус сервиса");
-			await client.SendMessage(message.Chat.Id, "Статус сервиса: " + systemTools.GetServiceStatus(serviceName).ToString());
+			await client.SendMessage(message.Chat.Id, "Статус сервиса: " + dataUnit.ToString());
 		}
 		private static async Task ServicesStatusOperation(ITelegramBotClient client, Message message)
 		{
@@ -184,7 +202,7 @@ namespace SystemBot
 		private static async Task RestartServerOperation(ITelegramBotClient client, Message message)
 		{
 			SystemTools systemTools = new SystemTools();
-			int delaySecondsRestart = 10;
+			int delaySecondsRestart = 0;
 			systemTools.RestartServer(delaySecondsRestart);
 			await client.SendMessage(message.Chat.Id, "Вы выбрали Перезагрузка сервера");
 			await client.SendMessage(message.Chat.Id, "Сервер перезагружается через " + delaySecondsRestart + "секунд");
@@ -192,10 +210,11 @@ namespace SystemBot
 		private static async Task ShutdownServerOperation(ITelegramBotClient client, Message message)
 		{
 			SystemTools systemTools = new SystemTools();
-			int delaySecondsShutDown = 10;
+			int delaySecondsShutDown = 0;
 			systemTools.ShutdownServer(delaySecondsShutDown);
 			await client.SendMessage(message.Chat.Id, "Вы выбрали Выключение сервера");
 			await client.SendMessage(message.Chat.Id, "Сервер выключается через " + delaySecondsShutDown + "секунд");
+			await client.SendMessage(message.Chat.Id, "Клавиатура скрыта.", replyMarkup: new ReplyKeyboardRemove());
 
 		}
 		private static async Task HandleRemoveKeyboard(ITelegramBotClient client, Message message)
