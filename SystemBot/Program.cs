@@ -2,17 +2,11 @@
 using IniParser;
 using NLog;
 using Telegram.Bot;
-using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using static SystemBot.SystemTools;
-using System.Diagnostics.Eventing.Reader;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace SystemBot
 {
@@ -63,10 +57,21 @@ namespace SystemBot
 			configTextDefault = $"TOKEN = [{_token}]\r\n" +
 								$"ADMIN_ID = [{ADMIN_ID}]";
 		}
+
 		static async Task Main(string[] args)
 		{
 			logger.Info($"Starting...");
 			initConfig();
+
+			AppDomain.CurrentDomain.ProcessExit += OnProcessExit; // Для ProcessExit
+			Console.CancelKeyPress += OnCancelKeyPress;          // Для Ctrl+C (SIGINT)
+
+			// Подписываемся на SIGTERM (только для Linux)
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+			{
+				UnixSignalHandler.Register(Signum.SIGTERM, OnSigTerm);
+			}
+
 			logger.Info(configTextDefault);
 
 			logger.Info($"Done!");
@@ -77,9 +82,16 @@ namespace SystemBot
 			bot.Start();
 			bot.OnMessage += OnMessage;
 
-			Console.ReadKey();
-			await Task.CompletedTask;
+			// Бесконечный цикл для работы демона
+			while (true)
+			{
+				await Task.Delay(1000); // Ожидание 1 секунду
+			}
+
+			//await Task.CompletedTask;
 		}
+
+		private static HashSet<long> chatIds = new HashSet<long>();
 		private static async void OnMessage(ITelegramBotClient client, Update update)
 		{
 			try
@@ -88,7 +100,8 @@ namespace SystemBot
 				{
 					return;
 				}
-				
+
+				chatIds.Add(update.Message.Chat.Id);
 				// Проверяем, есть ли команда в словаре
 				if (update.Message.Text != null && _commands.TryGetValue(update.Message.Text, out var commandHandler))
 				{
@@ -136,74 +149,77 @@ namespace SystemBot
 		[Command("/start")]
 		public static async Task HandleStartCommand(ITelegramBotClient client, Message message)
 		{
-			if (message?.From?.Id == ADMIN_ID)
+			if (message != null && message.From != null)
 			{
-				var replyAdminKeyboard = new ReplyKeyboardMarkup(
-				new List<KeyboardButton[]>()
+				if (message.From.Id == ADMIN_ID)
 				{
-				new KeyboardButton[]
-				{
-					new KeyboardButton("Загрузка CPU"),
-					new KeyboardButton("Температура CPU"),
-				},
-				new KeyboardButton[]
-				{
-					new KeyboardButton("Загрузка RAM"),
-					new KeyboardButton("Загрузка диска"),
-				},
-				new KeyboardButton[]
-				{
-					new KeyboardButton("Статус VPN сервера"),
-					new KeyboardButton("Статус TeamSpeak сервера"),
-				},
-				new KeyboardButton[]
-				{
-					new KeyboardButton("Перезагрузка сервера"),
-					new KeyboardButton("Выключение сервера"),
-				},
-				new KeyboardButton[]
-				{
-					new KeyboardButton("Выход")
-				}
-				})
-				{
-					Selective = true,
-					ResizeKeyboard = true,
-				};
+					var replyAdminKeyboard = new ReplyKeyboardMarkup(
+					new List<KeyboardButton[]>()
+					{
+						new KeyboardButton[]
+						{
+							new KeyboardButton("Загрузка CPU"),
+							new KeyboardButton("Температура CPU"),
+						},
+						new KeyboardButton[]
+						{
+							new KeyboardButton("Загрузка RAM"),
+							new KeyboardButton("Загрузка диска"),
+						},
+						new KeyboardButton[]
+						{
+							new KeyboardButton("Статус VPN сервера"),
+							new KeyboardButton("Статус TeamSpeak сервера"),
+						},
+						new KeyboardButton[]
+						{
+							new KeyboardButton("Перезагрузка сервера"),
+							new KeyboardButton("Выключение сервера"),
+						},
+						new KeyboardButton[]
+						{
+							new KeyboardButton("Выход")
+						}
+					})
+					{
+						Selective = true,
+						ResizeKeyboard = true,
+					};
 
-				await client.SendMessage(message.Chat.Id, "Здравствуйте! Выберите действие:", replyMarkup: replyAdminKeyboard, replyParameters: message.Id);
-			}
-			else if (message?.From?.Id != ADMIN_ID)
-			{
-				var replyKeyboard = new ReplyKeyboardMarkup(
-				new List<KeyboardButton[]>()
-				{
-				new KeyboardButton[]
-				{
-					new KeyboardButton("Загрузка CPU"),
-					new KeyboardButton("Температура CPU"),
-				},
-				new KeyboardButton[]
-				{
-					new KeyboardButton("Загрузка RAM"),
-					new KeyboardButton("Загрузка диска"),
-				},
-				new KeyboardButton[]
-				{
-					new KeyboardButton("Статус VPN сервера"),
-					new KeyboardButton("Статус TeamSpeak сервера"),
-				},
-				new KeyboardButton[]
-				{
-					new KeyboardButton("Выход")
+					await client.SendMessage(message.Chat.Id, "Здравствуйте! Выберите действие:", replyMarkup: replyAdminKeyboard, replyParameters: message.Id);
 				}
-				})
+				else
 				{
-					Selective = true,
-					ResizeKeyboard = true,
-				};
+					var replyKeyboard = new ReplyKeyboardMarkup(
+					new List<KeyboardButton[]>()
+					{
+						new KeyboardButton[]
+						{
+							new KeyboardButton("Загрузка CPU"),
+							new KeyboardButton("Температура CPU"),
+						},
+						new KeyboardButton[]
+						{
+							new KeyboardButton("Загрузка RAM"),
+							new KeyboardButton("Загрузка диска"),
+						},
+						new KeyboardButton[]
+						{
+							new KeyboardButton("Статус VPN сервера"),
+							new KeyboardButton("Статус TeamSpeak сервера"),
+						},
+						new KeyboardButton[]
+						{
+							new KeyboardButton("Выход")
+						}
+					})
+					{
+						Selective = true,
+						ResizeKeyboard = true,
+					};
 
-				await client.SendMessage(message.Chat.Id, "Здравствуйте! Выберите действие:", replyMarkup: replyKeyboard, replyParameters: message.Id);
+					await client.SendMessage(message.Chat.Id, "Здравствуйте! Выберите действие:", replyMarkup: replyKeyboard, replyParameters: message.Id);
+				}
 			}
 		}
 
@@ -243,7 +259,7 @@ namespace SystemBot
 		public static async Task VPNStatusOperation(ITelegramBotClient client, Message message)
 		{
 			SystemTools systemTools = new SystemTools();
-			string serviceName = string.Empty;
+			string serviceName = "openvpn-server@server.service";
 			DataUnit dataUnit = systemTools.GetServiceStatus(serviceName);
 			await client.SendMessage(message.Chat.Id, $"Вы выбрали Статус VPN сервера\nСтатус VPN сервера: {dataUnit}.");
 		}
@@ -252,7 +268,7 @@ namespace SystemBot
 		public static async Task TeamSpeakStatusOperation(ITelegramBotClient client, Message message)
 		{
 			SystemTools systemTools = new SystemTools();
-			string serviceName = string.Empty;
+			string serviceName = "teamspeak.service";
 			DataUnit dataUnit = systemTools.GetServiceStatus(serviceName);
 			await client.SendMessage(message.Chat.Id, $"Вы выбрали Статус TeamSpeak сервера\nСтатус TeamSpeak сервера: {dataUnit}.");
 		}
@@ -263,7 +279,11 @@ namespace SystemBot
 			SystemTools systemTools = new SystemTools();
 			int delaySecondsRestart = 300;
 			systemTools.RestartServer(delaySecondsRestart);
-			await client.SendMessage(message.Chat.Id, $"Вы выбрали Перезагрузка сервера\nСервер перезагружается через {delaySecondsRestart} секунд.");
+
+			foreach (long id in chatIds)
+			{
+				await client.SendMessage(id, $"Сервер перезагружается через {delaySecondsRestart} секунд.");
+			}
 		}
 
 		[Command("Выключение сервера")]
@@ -272,13 +292,104 @@ namespace SystemBot
 			SystemTools systemTools = new SystemTools();
 			int delaySecondsShutDown = 300;
 			systemTools.ShutdownServer(delaySecondsShutDown);
-			await client.SendMessage(message.Chat.Id, $"Вы выбрали Выключение сервера\nСервер выключается через {delaySecondsShutDown} секунд\nКлавиатура скрыта.", replyMarkup: new ReplyKeyboardRemove());
+			foreach (long id in chatIds)
+			{
+				await client.SendMessage(id, $"Сервер выключается через {delaySecondsShutDown} секунд\nКлавиатура скрыта.", replyMarkup: new ReplyKeyboardRemove());
+			}
 		}
 
 		[Command("Выход")]
 		public static async Task HandleRemoveKeyboard(ITelegramBotClient client, Message message)
 		{
 			await client.SendMessage(message.Chat.Id, "Выход\nКлавиатура скрыта.", replyMarkup: new ReplyKeyboardRemove() { Selective = true }, replyParameters: message.Id);
+		}
+
+		//----------------------------------------- SYSTEM -----------------------------------------
+
+		public static async Task RemoveKeyboardForAll(ITelegramBotClient client)
+		{
+			foreach (long id in chatIds)
+			{
+				await client.SendMessage(id, "Бот выключается.", replyMarkup: new ReplyKeyboardRemove());
+			}
+		}
+
+		private static bool _isExiting = false; // Флаг для отслеживания состояния завершения
+		private static readonly object _lock = new object(); // Объект для блокировки
+		private static async void OnProcessExit(object? sender, EventArgs e)
+		{
+			lock (_lock)
+			{
+				if (_isExiting) return; // Если уже завершаемся, выходим
+				_isExiting = true; // Устанавливаем флаг
+			}
+
+			logger.Info("Обработчик ProcessExit: завершение работы...");
+
+			try
+			{
+				if (Host.BotClient != null)
+					await RemoveKeyboardForAll(Host.BotClient);
+			}
+			catch (Exception ex)
+			{
+				logger.Error($"Ошибка завершения работы: {ex}");
+			}
+			finally
+			{
+				Environment.Exit(0); // Завершаем программу
+			}
+		}
+
+		private static async void OnCancelKeyPress(object? sender, ConsoleCancelEventArgs e)
+		{
+			lock (_lock)
+			{
+				if (_isExiting) return; // Если уже завершаемся, выходим
+				_isExiting = true; // Устанавливаем флаг
+			}
+
+			logger.Info("Обработчик Ctrl+C (SIGINT): завершение работы...");
+			e.Cancel = true; // Предотвращаем завершение процесса по умолчанию
+
+			try
+			{
+				if (Host.BotClient != null)
+					await RemoveKeyboardForAll(Host.BotClient);
+			}
+			catch (Exception ex)
+			{
+				logger.Error($"Ошибка завершения работы: {ex}");
+			}
+			finally
+			{
+				Environment.Exit(0); // Завершаем программу
+			}
+		}
+
+		private static async void OnSigTerm()
+		{
+			lock (_lock)
+			{
+				if (_isExiting) return; // Если уже завершаемся, выходим
+				_isExiting = true; // Устанавливаем флаг
+			}
+
+			logger.Info("Обработчик SIGTERM: завершение работы...");
+
+			try
+			{
+				if (Host.BotClient != null)
+					await RemoveKeyboardForAll(Host.BotClient);
+			}
+			catch (Exception ex)
+			{
+				logger.Error($"Ошибка завершения работы: {ex}");
+			}
+			finally
+			{
+				Environment.Exit(0); // Завершаем программу
+			}
 		}
 	}
 }

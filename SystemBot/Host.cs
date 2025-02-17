@@ -1,15 +1,7 @@
-﻿using IniParser.Model;
-using IniParser;
-using NLog;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using NLog;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Polling;
-using static SystemBot.SystemTools;
 
 namespace SystemBot
 {
@@ -22,6 +14,17 @@ namespace SystemBot
 		public Action<ITelegramBotClient, Update>? OnMessage;
 
 		private static TelegramBotClient? _botClient;
+		public static TelegramBotClient? BotClient
+		{
+			get
+			{
+				return _botClient;
+			}
+			//set
+			//{
+			//	//_botClient = value;
+			//}
+		}
 
 		public Host(string _token) 
 		{
@@ -46,5 +49,6 @@ namespace SystemBot
 			OnMessage?.Invoke(client, update);
 			await Task.CompletedTask;
 		}
+
 	}
 }

@@ -9,10 +9,16 @@ namespace SystemBot
 		private static readonly Logger baseLogger = LogManager.GetLogger(moduleName);
 		private static readonly LoggerManager logger = new LoggerManager(baseLogger, moduleName);
 
-		//public SystemBot()
-		//{
-
-		//}
+		private bool _sudo = false;
+		public bool Sudo
+		{
+			get { return _sudo; }
+			set { _sudo = value; }
+		}
+		public SystemTools(bool sudo = false)
+		{
+			Sudo = sudo;
+		}
 
 		/// <summary>
 		/// Выполняет команду в оболочке Bash и возвращает результат.
@@ -26,7 +32,7 @@ namespace SystemBot
 				StartInfo = new ProcessStartInfo
 				{
 					FileName = "/bin/bash",
-					Arguments = $"-c \"{command}\"",
+					Arguments = $"-c \"{(_sudo ? "sudo" : string.Empty) + " " + command}\"",
 					RedirectStandardOutput = true,
 					UseShellExecute = false,
 					CreateNoWindow = true,
@@ -175,7 +181,7 @@ namespace SystemBot
 
 			public override string ToString()
 			{
-				return $"Status: {_statusType} from {_date}.";
+				return $"Status: {_statusType} from {_date}";
 			}
 		}
 
@@ -195,11 +201,11 @@ namespace SystemBot
 			try
 			{
 				// Проверяем, существует ли сервис
-				string exists = ExecuteCommand($"systemctl list-unit-files | grep -w {serviceName}.service");
+				string exists = ExecuteCommand($"systemctl list-units | grep -w {serviceName}");
 				if (string.IsNullOrEmpty(exists))
 				{
 					result._statusType = StatusType.NOT_FOUND;
-					result._date = "Service does not exist.";
+					result._date = "Service does not exist";
 					logger.Warn($"Service {serviceName} not found.");
 					return result;
 				}
