@@ -278,12 +278,12 @@ namespace SystemBot
 		{
 			SystemTools systemTools = new SystemTools();
 			int delaySecondsRestart = 300;
-			systemTools.RestartServer(delaySecondsRestart);
 
 			foreach (long id in chatIds)
 			{
 				await client.SendMessage(id, $"Сервер перезагружается через {delaySecondsRestart} секунд.");
 			}
+			systemTools.RestartServer(delaySecondsRestart);
 		}
 
 		[Command("Выключение сервера")]
@@ -291,11 +291,11 @@ namespace SystemBot
 		{
 			SystemTools systemTools = new SystemTools();
 			int delaySecondsShutDown = 300;
-			systemTools.ShutdownServer(delaySecondsShutDown);
 			foreach (long id in chatIds)
 			{
 				await client.SendMessage(id, $"Сервер выключается через {delaySecondsShutDown} секунд\nКлавиатура скрыта.", replyMarkup: new ReplyKeyboardRemove());
 			}
+			systemTools.ShutdownServer(delaySecondsShutDown);
 		}
 
 		[Command("Выход")]
