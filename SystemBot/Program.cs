@@ -11,6 +11,8 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using static SystemBot.SystemTools;
+using System.Diagnostics.Eventing.Reader;
+using System.Reflection;
 
 namespace SystemBot
 {
@@ -18,7 +20,7 @@ namespace SystemBot
 	{
 		private static readonly string moduleName = "Program";
 		private static readonly Logger baseLogger = LogManager.GetLogger(moduleName);
-		private static readonly LoggerManager logger = new LoggerManager(baseLogger, moduleName);
+		private static readonly LoggerManager logger = new(baseLogger, moduleName);
 
 		private static string _token = string.Empty;
 		public static string TOKEN
@@ -33,7 +35,7 @@ namespace SystemBot
 		private const string filePathConfig = "config.ini";
 		private static string configTextDefault = string.Empty;
 
-		private static Dictionary<string, string> Services = new Dictionary<string, string>();
+		private static Dictionary<string, Func<ITelegramBotClient, Message, Task>> _commands = [];
 		private static void initConfig()
 		{
 			FileIniDataParser parser = new FileIniDataParser();
@@ -60,11 +62,7 @@ namespace SystemBot
 
 			configTextDefault = $"TOKEN = [{_token}]\r\n" +
 								$"ADMIN_ID = [{ADMIN_ID}]";
-
-			//запись из JSON массива
-			
 		}
-
 		static async Task Main(string[] args)
 		{
 			logger.Info($"Starting...");
@@ -72,6 +70,8 @@ namespace SystemBot
 			logger.Info(configTextDefault);
 
 			logger.Info($"Done!");
+			_commands = new Dictionary<string, Func<ITelegramBotClient, Message, Task>>();
+			RegisterCommands();
 
 			Host bot = new Host(_token);
 			bot.Start();
@@ -80,41 +80,27 @@ namespace SystemBot
 			Console.ReadKey();
 			await Task.CompletedTask;
 		}
-
-		// Словарь команд и их обработчиков
-		private static readonly Dictionary<string, Func<ITelegramBotClient, Message, Task>> _commands = new()
-		{
-			{ "/start", HandleStartCommand },
-			{ "Загрузка CPU", CpuLoadOperation },
-			{ "Температура CPU", CpuTempOperation },
-			{ "Загрузка RAM", RamUsageOperation },
-			{ "Загрузка диска", DiskUsageOperation },
-			{ "Статус сервиса", ServiceStatusOperation },
-			//{ "Статус сервисов", ServicesStatusOperation },
-			{ "Перезагрузка сервера", RestartServerOperation },
-			{ "Выключение сервера", ShutdownServerOperation },
-			{ "Выход", HandleRemoveKeyboard }
-		};
-
 		private static async void OnMessage(ITelegramBotClient client, Update update)
 		{
+			RegisterCommands();
 			try
 			{
 				if (update.Message == null)
 				{
 					return;
 				}
+				
 				// Проверяем, есть ли команда в словаре
 				if (update.Message.Text != null && _commands.TryGetValue(update.Message.Text, out var commandHandler))
 				{
 					await commandHandler(client, update.Message);
 				}
 			}
-			catch 
+			catch
 			{
 				if (update.Message == null)
-				{  
-					return; 
+				{
+					return;
 				}
 
 				await client.SendMessage(update.Message.Chat.Id, "Ошибка! Возможно сервер не работает или выключен, попробуйте позже.");
@@ -122,12 +108,40 @@ namespace SystemBot
 			}
 		}
 
-		// Обработчики команд
-		private static async Task HandleStartCommand(ITelegramBotClient client, Message message)
+		public static void RegisterCommands()
 		{
-			var replyKeyboard = new ReplyKeyboardMarkup(
-			new List<KeyboardButton[]>()
+			var methods = Assembly.GetExecutingAssembly()
+				.GetTypes()
+				.SelectMany(t => t.GetMethods())
+				.Where(m => m.GetCustomAttributes(typeof(CommandAttribute), false).Length > 0);
+
+			foreach (var method in methods)
 			{
+				var attribute = (CommandAttribute)method.GetCustomAttributes(typeof(CommandAttribute), false).First();
+				_commands[attribute.Name] = (Func<ITelegramBotClient, Message, Task>)Delegate.CreateDelegate(typeof(Func<ITelegramBotClient, Message, Task>), method);
+			}
+		}
+
+		// Атрибут для пометки методов-обработчиков
+		[AttributeUsage(AttributeTargets.Method)]
+		public class CommandAttribute : Attribute
+		{
+			public string Name { get; }
+
+			public CommandAttribute(string name)
+			{
+				Name = name;
+			}
+		}
+
+		[Command("/start")]
+		public static async Task HandleStartCommand(ITelegramBotClient client, Message message)
+		{
+			if (message?.From?.Id == ADMIN_ID)
+			{
+				var replyAdminKeyboard = new ReplyKeyboardMarkup(
+				new List<KeyboardButton[]>()
+				{
 				new KeyboardButton[]
 				{
 					new KeyboardButton("Загрузка CPU"),
@@ -140,8 +154,8 @@ namespace SystemBot
 				},
 				new KeyboardButton[]
 				{
-					new KeyboardButton("Статус сервиса"),
-					new KeyboardButton("Статус сервисов"),
+					new KeyboardButton("Статус VPN сервера"),
+					new KeyboardButton("Статус TeamSpeak сервера"),
 				},
 				new KeyboardButton[]
 				{
@@ -152,81 +166,120 @@ namespace SystemBot
 				{
 					new KeyboardButton("Выход")
 				}
-			})
-			{
-				ResizeKeyboard = true,
-			};
+				})
+				{
+					Selective = true,
+					ResizeKeyboard = true,
+				};
 
-			await client.SendMessage(message.Chat.Id, "Здравствуйте! Выберите действие:", replyMarkup: replyKeyboard);
+				await client.SendMessage(message.Chat.Id, "Здравствуйте! Выберите действие:", replyMarkup: replyAdminKeyboard, replyParameters: message.Id);
+			}
+			else if (message?.From?.Id != ADMIN_ID)
+			{
+				var replyKeyboard = new ReplyKeyboardMarkup(
+				new List<KeyboardButton[]>()
+				{
+				new KeyboardButton[]
+				{
+					new KeyboardButton("Загрузка CPU"),
+					new KeyboardButton("Температура CPU"),
+				},
+				new KeyboardButton[]
+				{
+					new KeyboardButton("Загрузка RAM"),
+					new KeyboardButton("Загрузка диска"),
+				},
+				new KeyboardButton[]
+				{
+					new KeyboardButton("Статус VPN сервера"),
+					new KeyboardButton("Статус TeamSpeak сервера"),
+				},
+				new KeyboardButton[]
+				{
+					new KeyboardButton("Выход")
+				}
+				})
+				{
+					Selective = true,
+					ResizeKeyboard = true,
+				};
+
+				await client.SendMessage(message.Chat.Id, "Здравствуйте! Выберите действие:", replyMarkup: replyKeyboard, replyParameters: message.Id);
+			}
 		}
 
-		private static async Task CpuLoadOperation(ITelegramBotClient client, Message message)
+		[Command("Загрузка CPU")]
+		public static async Task CpuLoadOperation(ITelegramBotClient client, Message message)
 		{
 			SystemTools systemTools = new SystemTools();
 			double cpuLoad = Math.Round(systemTools.GetCpuLoad(), 0);
-			await client.SendMessage(message.Chat.Id, "Вы выбрали Загрузка CPU");
-			await client.SendMessage(message.Chat.Id, $"CPU загружен на {cpuLoad}%");
+			await client.SendMessage(message.Chat.Id, $"Вы выбрали Загрузка CPU\nCPU загружен на {cpuLoad}%.");
 		}
-		private static async Task CpuTempOperation(ITelegramBotClient client, Message message)
+
+		[Command("Температура CPU")]
+		public static async Task CpuTempOperation(ITelegramBotClient client, Message message)
 		{
 			SystemTools systemTools = new SystemTools();
 			double cpuTemp = Math.Round(systemTools.GetCpuTemperature(), 0);
-			await client.SendMessage(message.Chat.Id, "Вы выбрали Температура CPU");
-			await client.SendMessage(message.Chat.Id, $"Температура CPU составляет {cpuTemp}°C");
+			await client.SendMessage(message.Chat.Id, $"Вы выбрали Температура CPU\nТемпература CPU составляет {cpuTemp}°C.");
 		}
-		private static async Task RamUsageOperation(ITelegramBotClient client, Message message)
+
+		[Command("Загрузка RAM")]
+		public static async Task RamUsageOperation(ITelegramBotClient client, Message message)
 		{
 			SystemTools systemTools = new SystemTools();
 			double ramUsage = Math.Round(systemTools.GetRamUsage(), 0);
-			await client.SendMessage(message.Chat.Id, "Вы выбрали Загрузка RAM");
-			await client.SendMessage(message.Chat.Id, $"CPU загружен на {ramUsage}%");
+			await client.SendMessage(message.Chat.Id, $"Вы выбрали Загрузка RAM\nCPU загружен на {ramUsage}%.");
 		}
-		private static async Task DiskUsageOperation(ITelegramBotClient client, Message message)
+
+		[Command("Загрузка диска")]
+		public static async Task DiskUsageOperation(ITelegramBotClient client, Message message)
 		{
 			SystemTools systemTools = new SystemTools();
 			double diskUsage = Math.Round(systemTools.GetDiskUsage(), 0);
-			await client.SendMessage(message.Chat.Id, "Вы выбрали Загрузка диска");
-			await client.SendMessage(message.Chat.Id, $"Диск загружен на {diskUsage}%");
+			await client.SendMessage(message.Chat.Id, $"Вы выбрали Загрузка диска\nДиск загружен на {diskUsage}%.");
 		}
 
-		private static async Task ServiceStatusOperation(ITelegramBotClient client, Message message)
+		[Command("Статус VPN сервера")]
+		public static async Task VPNStatusOperation(ITelegramBotClient client, Message message)
 		{
 			SystemTools systemTools = new SystemTools();
 			string serviceName = string.Empty;
 			DataUnit dataUnit = systemTools.GetServiceStatus(serviceName);
-			await client.SendMessage(message.Chat.Id, "Вы выбрали Статус сервиса");
-			await client.SendMessage(message.Chat.Id, $"Статус сервиса: {dataUnit}");
+			await client.SendMessage(message.Chat.Id, $"Вы выбрали Статус VPN сервера\nСтатус VPN сервера: {dataUnit}.");
 		}
-		//private static async Task ServicesStatusOperation(ITelegramBotClient client, Message message)
-		//{
-		//	string[] servicesName = new string[0];
-		//	SystemTools systemTools = new SystemTools();
-		//	DataUnit[] dataUnits = systemTools.GetServicesStatus(servicesName);
-		//	await client.SendMessage(message.Chat.Id, "Вы выбрали Статус сервисов");
-		//	await client.SendMessage(message.Chat.Id, $"Статус сервисов: {string.Join(Environment.NewLine, dataUnits)}");
-		//}
-		private static async Task RestartServerOperation(ITelegramBotClient client, Message message)
+
+		[Command("Статус TeamSpeak сервера")]
+		public static async Task TeamSpeakStatusOperation(ITelegramBotClient client, Message message)
+		{
+			SystemTools systemTools = new SystemTools();
+			string serviceName = string.Empty;
+			DataUnit dataUnit = systemTools.GetServiceStatus(serviceName);
+			await client.SendMessage(message.Chat.Id, $"Вы выбрали Статус TeamSpeak сервера\nСтатус TeamSpeak сервера: {dataUnit}.");
+		}
+
+		[Command("Перезагрузка сервера")]
+		public static async Task RestartServerOperation(ITelegramBotClient client, Message message)
 		{
 			SystemTools systemTools = new SystemTools();
 			int delaySecondsRestart = 300;
 			systemTools.RestartServer(delaySecondsRestart);
-			await client.SendMessage(message.Chat.Id, "Вы выбрали Перезагрузка сервера");
-			await client.SendMessage(message.Chat.Id, $"Сервер перезагружается через {delaySecondsRestart} секунд");
+			await client.SendMessage(message.Chat.Id, $"Вы выбрали Перезагрузка сервера\nСервер перезагружается через {delaySecondsRestart} секунд.");
 		}
-		private static async Task ShutdownServerOperation(ITelegramBotClient client, Message message)
+
+		[Command("Выключение сервера")]
+		public static async Task ShutdownServerOperation(ITelegramBotClient client, Message message)
 		{
 			SystemTools systemTools = new SystemTools();
 			int delaySecondsShutDown = 300;
 			systemTools.ShutdownServer(delaySecondsShutDown);
-			await client.SendMessage(message.Chat.Id, "Вы выбрали Выключение сервера");
-			await client.SendMessage(message.Chat.Id, $"Сервер выключается через {delaySecondsShutDown} секунд");
-			await client.SendMessage(message.Chat.Id, "Клавиатура скрыта.", replyMarkup: new ReplyKeyboardRemove());
-
+			await client.SendMessage(message.Chat.Id, $"Вы выбрали Выключение сервера\nСервер выключается через {delaySecondsShutDown} секунд\nКлавиатура скрыта.", replyMarkup: new ReplyKeyboardRemove());
 		}
-		private static async Task HandleRemoveKeyboard(ITelegramBotClient client, Message message)
+
+		[Command("Выход")]
+		public static async Task HandleRemoveKeyboard(ITelegramBotClient client, Message message)
 		{
-			await client.SendMessage(message.Chat.Id, "Выход");
-			await client.SendMessage(message.Chat.Id, "Клавиатура скрыта.", replyMarkup: new ReplyKeyboardRemove());
+			await client.SendMessage(message.Chat.Id, "Выход\nКлавиатура скрыта.", replyMarkup: new ReplyKeyboardRemove() { Selective = true }, replyParameters: message.Id);
 		}
 	}
 }
