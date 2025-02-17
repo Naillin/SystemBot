@@ -89,12 +89,23 @@ namespace SystemBot
 				{
 					return;
 				}
-				
-				// Проверяем, есть ли команда в словаре
-				if (update.Message.Text != null && _commands.TryGetValue(update.Message.Text, out var commandHandler))
-				{
-					await commandHandler(client, update.Message);
-				}
+                List<string> values = new List<string>() { "Выход" , "Загрузка диска" };
+                
+                {
+                    // Проверяем, есть ли команда в словаре
+                    if (update.Message.Text != null && _commands.TryGetValue(update.Message.Text, out var commandHandler))
+                    {
+                        await commandHandler(client, update.Message);
+                    }
+					for (int i = 0; i < values.Count; i++)
+
+					{
+						if (update.Message.Text == values[i])
+						{
+							await client.SendMessage(update.Message.Chat.Id, "Ошибка!");
+						}
+					}
+                }     
 			}
 			catch
 			{
