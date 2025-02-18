@@ -267,7 +267,7 @@ namespace SystemBot
 		{
 			logger.Info($"Перезагрузка через {delaySeconds} секунд...");
 			Thread.Sleep(delaySeconds * 1000);
-			ExecuteCommand("sudo reboot");
+			ExecuteCommand("reboot");
 		}
 
 		/// <summary>
@@ -278,7 +278,7 @@ namespace SystemBot
 		{
 			logger.Info($"Выключение через {delaySeconds} секунд...");
 			Thread.Sleep(delaySeconds * 1000);
-			ExecuteCommand("sudo poweroff");
+			ExecuteCommand("poweroff");
 		}
 	}
 }

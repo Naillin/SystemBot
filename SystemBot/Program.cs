@@ -101,11 +101,18 @@ namespace SystemBot
 					return;
 				}
 
-				chatIds.Add(update.Message.Chat.Id);
-				// Проверяем, есть ли команда в словаре
-				if (update.Message.Text != null && _commands.TryGetValue(update.Message.Text, out var commandHandler))
+				if (!isShutdowned)
 				{
-					await commandHandler(client, update.Message);
+					chatIds.Add(update.Message.Chat.Id);
+					// Проверяем, есть ли команда в словаре
+					if (update.Message.Text != null && _commands.TryGetValue(update.Message.Text, out var commandHandler))
+					{
+						await commandHandler(client, update.Message);
+					}
+				}
+				else
+				{
+					await client.SendMessage(update.Message.Chat.Id, "Нельзя исполнить команду! Сервер в процессе выключения/перезагрузки!");
 				}
 			}
 			catch
@@ -273,28 +280,31 @@ namespace SystemBot
 			await client.SendMessage(message.Chat.Id, $"{dataUnit}.");
 		}
 
+		private static bool isShutdowned = false;
 		[Command("Перезагрузка сервера")]
 		public static async Task RestartServerOperation(ITelegramBotClient client, Message message)
 		{
-			SystemTools systemTools = new SystemTools();
+			SystemTools systemTools = new SystemTools(true);
 			int delaySecondsRestart = 300;
 
 			foreach (long id in chatIds)
 			{
 				await client.SendMessage(id, $"Сервер перезагружается через {delaySecondsRestart} секунд.");
 			}
+			isShutdowned = true;
 			systemTools.RestartServer(delaySecondsRestart);
 		}
 
 		[Command("Выключение сервера")]
 		public static async Task ShutdownServerOperation(ITelegramBotClient client, Message message)
 		{
-			SystemTools systemTools = new SystemTools();
+			SystemTools systemTools = new SystemTools(true);
 			int delaySecondsShutDown = 300;
 			foreach (long id in chatIds)
 			{
 				await client.SendMessage(id, $"Сервер выключается через {delaySecondsShutDown} секунд\nКлавиатура скрыта.", replyMarkup: new ReplyKeyboardRemove());
 			}
+			isShutdowned = true;
 			systemTools.ShutdownServer(delaySecondsShutDown);
 		}
 
