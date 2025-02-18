@@ -218,7 +218,7 @@ namespace SystemBot
 						ResizeKeyboard = true,
 					};
 
-					await client.SendMessage(message.Chat.Id, "Здравствуйте! Выберите действие:", replyMarkup: replyKeyboard, replyParameters: message.Id);
+					await client.SendMessage(message.Chat.Id, "Выберите действие:", replyMarkup: replyKeyboard, replyParameters: message.Id);
 				}
 			}
 		}
@@ -228,7 +228,7 @@ namespace SystemBot
 		{
 			SystemTools systemTools = new SystemTools();
 			double cpuLoad = Math.Round(systemTools.GetCpuLoad(), 0);
-			await client.SendMessage(message.Chat.Id, $"Вы выбрали Загрузка CPU\nCPU загружен на {cpuLoad}%.");
+			await client.SendMessage(message.Chat.Id, $"CPU загружен на {cpuLoad}%.");
 		}
 
 		[Command("Температура CPU")]
@@ -236,7 +236,7 @@ namespace SystemBot
 		{
 			SystemTools systemTools = new SystemTools();
 			double cpuTemp = Math.Round(systemTools.GetCpuTemperature(), 0);
-			await client.SendMessage(message.Chat.Id, $"Вы выбрали Температура CPU\nТемпература CPU составляет {cpuTemp}°C.");
+			await client.SendMessage(message.Chat.Id, $"Температура CPU составляет {cpuTemp}°C.");
 		}
 
 		[Command("Загрузка RAM")]
@@ -244,7 +244,7 @@ namespace SystemBot
 		{
 			SystemTools systemTools = new SystemTools();
 			double ramUsage = Math.Round(systemTools.GetRamUsage(), 0);
-			await client.SendMessage(message.Chat.Id, $"Вы выбрали Загрузка RAM\nCPU загружен на {ramUsage}%.");
+			await client.SendMessage(message.Chat.Id, $"RAM загружен на {ramUsage}%.");
 		}
 
 		[Command("Загрузка диска")]
@@ -252,7 +252,7 @@ namespace SystemBot
 		{
 			SystemTools systemTools = new SystemTools();
 			double diskUsage = Math.Round(systemTools.GetDiskUsage(), 0);
-			await client.SendMessage(message.Chat.Id, $"Вы выбрали Загрузка диска\nДиск загружен на {diskUsage}%.");
+			await client.SendMessage(message.Chat.Id, $"Диск загружен на {diskUsage}%.");
 		}
 
 		[Command("Статус VPN сервера")]
@@ -261,7 +261,7 @@ namespace SystemBot
 			SystemTools systemTools = new SystemTools();
 			string serviceName = "openvpn-server@server.service";
 			DataUnit dataUnit = systemTools.GetServiceStatus(serviceName);
-			await client.SendMessage(message.Chat.Id, $"Вы выбрали Статус VPN сервера\nСтатус VPN сервера: {dataUnit}.");
+			await client.SendMessage(message.Chat.Id, $"{dataUnit}.");
 		}
 
 		[Command("Статус TeamSpeak сервера")]
@@ -270,7 +270,7 @@ namespace SystemBot
 			SystemTools systemTools = new SystemTools();
 			string serviceName = "teamspeak.service";
 			DataUnit dataUnit = systemTools.GetServiceStatus(serviceName);
-			await client.SendMessage(message.Chat.Id, $"Вы выбрали Статус TeamSpeak сервера\nСтатус TeamSpeak сервера: {dataUnit}.");
+			await client.SendMessage(message.Chat.Id, $"{dataUnit}.");
 		}
 
 		[Command("Перезагрузка сервера")]
