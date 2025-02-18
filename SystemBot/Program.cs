@@ -122,8 +122,7 @@ namespace SystemBot
 					return;
 				}
 
-				await client.SendMessage(update.Message.Chat.Id, "Ошибка! Возможно сервер не работает или выключен, попробуйте позже.");
-				await client.SendMessage(update.Message.Chat.Id, "Клавиатура скрыта.", replyMarkup: new ReplyKeyboardRemove());
+				await client.SendMessage(update.Message.Chat.Id, "Ошибка! Возможно сервер не работает или выключен, попробуйте позже.\nКлавиатура скрыта.", replyMarkup: new ReplyKeyboardRemove());
 			}
 		}
 
@@ -193,7 +192,7 @@ namespace SystemBot
 						ResizeKeyboard = true,
 					};
 
-					await client.SendMessage(message.Chat.Id, "Здравствуйте! Выберите действие:", replyMarkup: replyAdminKeyboard, replyParameters: message.Id);
+					await client.SendMessage(message.Chat.Id, "Выберите действие:", replyMarkup: replyAdminKeyboard, replyParameters: message.Id);
 				}
 				else
 				{
