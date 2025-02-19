@@ -125,7 +125,7 @@ namespace SystemBot
 				}
 
 				await client.SendMessage(update.Message.Chat.Id, "Ошибка! Кажется что-то пошло не так, попробуйте позже.\nКлавиатура скрыта.", replyMarkup: new ReplyKeyboardRemove());
-				logger.Error($"Ошибка в время обработки сообщения: {ex}");
+				logger.Error($"Ошибка в время обработки сообщения: {ex.Message}");
 			}
 		}
 
@@ -345,7 +345,7 @@ namespace SystemBot
 			}
 			catch (Exception ex)
 			{
-				logger.Error($"Ошибка завершения работы: {ex}");
+				logger.Error($"Ошибка завершения работы: {ex.Message}");
 			}
 			finally
 			{
@@ -371,7 +371,7 @@ namespace SystemBot
 			}
 			catch (Exception ex)
 			{
-				logger.Error($"Ошибка завершения работы: {ex}");
+				logger.Error($"Ошибка завершения работы: {ex.Message}");
 			}
 			finally
 			{
@@ -396,7 +396,7 @@ namespace SystemBot
 			}
 			catch (Exception ex)
 			{
-				logger.Error($"Ошибка завершения работы: {ex}");
+				logger.Error($"Ошибка завершения работы: {ex.Message}");
 			}
 			finally
 			{
