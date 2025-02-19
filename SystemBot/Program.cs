@@ -100,19 +100,18 @@ namespace SystemBot
 				{
 					return;
 				}
-
-				if (!isShutdowned)
+				if (update.Message.Text != null && _commands.TryGetValue(update.Message.Text, out var commandHandler))
 				{
 					chatIds.Add(update.Message.Chat.Id);
-					// Проверяем, есть ли команда в словаре
-					if (update.Message.Text != null && _commands.TryGetValue(update.Message.Text, out var commandHandler))
-					{
+					if (!isShutdowned)
+					{           
+						// Проверяем, есть ли команда в словаре
 						await commandHandler(client, update.Message);
 					}
-				}
-				else
-				{
-					await client.SendMessage(update.Message.Chat.Id, "Нельзя исполнить команду! Сервер в процессе выключения/перезагрузки!");
+					else
+					{
+						await client.SendMessage(update.Message.Chat.Id, "Нельзя исполнить команду! Сервер в процессе выключения/перезагрузки!");
+					}
 				}
 			}
 			catch
