@@ -100,9 +100,11 @@ namespace SystemBot
 				{
 					return;
 				}
+
+
+				chatIds.Add(update.Message.Chat.Id);
 				if (update.Message.Text != null && _commands.TryGetValue(update.Message.Text, out var commandHandler))
 				{
-					chatIds.Add(update.Message.Chat.Id);
 					if (!isShutdowned)
 					{           
 						// Проверяем, есть ли команда в словаре
@@ -111,17 +113,19 @@ namespace SystemBot
 					else
 					{
 						await client.SendMessage(update.Message.Chat.Id, "Нельзя исполнить команду! Сервер в процессе выключения/перезагрузки!");
+						logger.Warn($"Вызов команды отменен! Сервер в процессе выключения/перезагрузки.");
 					}
 				}
 			}
-			catch
+			catch (Exception ex)
 			{
 				if (update.Message == null)
 				{
 					return;
 				}
 
-				await client.SendMessage(update.Message.Chat.Id, "Ошибка! Возможно сервер не работает или выключен, попробуйте позже.\nКлавиатура скрыта.", replyMarkup: new ReplyKeyboardRemove());
+				await client.SendMessage(update.Message.Chat.Id, "Ошибка! Кажется что-то пошло не так, попробуйте позже.\nКлавиатура скрыта.", replyMarkup: new ReplyKeyboardRemove());
+				logger.Error($"Ошибка в время обработки сообщения: {ex}");
 			}
 		}
 

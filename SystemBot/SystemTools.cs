@@ -262,23 +262,21 @@ namespace SystemBot
 		/// <summary>
 		/// Перезагружает сервер.
 		/// </summary>
-		/// <param name="delaySeconds">Задержка в секундах.</param>
-		public void RestartServer(int delaySeconds)
+		/// <param name="delayMinutes">Задержка в минутах.</param>
+		public void RestartServer(int delayMinutes)
 		{
-			logger.Info($"Перезагрузка через {delaySeconds} секунд...");
-			Thread.Sleep(delaySeconds * 1000);
-			ExecuteCommand("reboot");
+			logger.Info($"Перезагрузка через {delayMinutes} минут...");
+			ExecuteCommand($"shutdown -r +{delayMinutes}");
 		}
 
 		/// <summary>
 		/// Выключает сервер.
 		/// </summary>
-		/// <param name="delaySeconds">Задержка в секундах.</param>
-		public void ShutdownServer(int delaySeconds)
+		/// <param name="delayMinutes">Задержка в минутах.</param>
+		public void ShutdownServer(int delayMinutes)
 		{
-			logger.Info($"Выключение через {delaySeconds} секунд...");
-			Thread.Sleep(delaySeconds * 1000);
-			ExecuteCommand("poweroff");
+			logger.Info($"Выключение через {delayMinutes} минут...");
+			ExecuteCommand($"shutdown -h +{delayMinutes}");
 		}
 	}
 }
