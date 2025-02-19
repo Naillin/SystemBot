@@ -287,27 +287,27 @@ namespace SystemBot
 		public static async Task RestartServerOperation(ITelegramBotClient client, Message message)
 		{
 			SystemTools systemTools = new SystemTools(true);
-			int delaySecondsRestart = 300;
+			int delayMinutesRestart = 5;
 
 			foreach (long id in chatIds)
 			{
-				await client.SendMessage(id, $"Сервер перезагружается через {delaySecondsRestart} секунд.");
+				await client.SendMessage(id, $"Сервер перезагрузится через {delayMinutesRestart} минут.");
 			}
 			isShutdowned = true;
-			systemTools.RestartServer(delaySecondsRestart);
+			systemTools.RestartServer(delayMinutesRestart);
 		}
 
 		[Command("Выключение сервера")]
 		public static async Task ShutdownServerOperation(ITelegramBotClient client, Message message)
 		{
 			SystemTools systemTools = new SystemTools(true);
-			int delaySecondsShutDown = 300;
+			int delayMinutesShutDown = 5;
 			foreach (long id in chatIds)
 			{
-				await client.SendMessage(id, $"Сервер выключается через {delaySecondsShutDown} секунд\nКлавиатура скрыта.", replyMarkup: new ReplyKeyboardRemove());
+				await client.SendMessage(id, $"Сервер выключится через {delayMinutesShutDown} минут.\nКлавиатура скрыта.", replyMarkup: new ReplyKeyboardRemove());
 			}
 			isShutdowned = true;
-			systemTools.ShutdownServer(delaySecondsShutDown);
+			systemTools.ShutdownServer(delayMinutesShutDown);
 		}
 
 		[Command("Выход")]
