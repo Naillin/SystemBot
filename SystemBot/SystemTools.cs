@@ -32,7 +32,7 @@ namespace SystemBot
 				StartInfo = new ProcessStartInfo
 				{
 					FileName = "/bin/bash",
-					Arguments = $"-c \"{(_sudo ? "sudo" : string.Empty) + " " + command}\"",
+					Arguments = $"-c \"{(_sudo ? "sudo " : string.Empty) + command}\"",
 					RedirectStandardOutput = true,
 					UseShellExecute = false,
 					CreateNoWindow = true,

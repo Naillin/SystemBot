@@ -155,7 +155,7 @@ namespace SystemBot
 			}
 		}
 
-		[Command("/start")]
+		[Command("/sys_start@system_ultra_bot")]
 		public static async Task HandleStartCommand(ITelegramBotClient client, Message message)
 		{
 			if (message != null && message.From != null)
@@ -286,12 +286,12 @@ namespace SystemBot
 		[Command("Перезагрузка сервера")]
 		public static async Task RestartServerOperation(ITelegramBotClient client, Message message)
 		{
-			SystemTools systemTools = new SystemTools(true);
+			SystemTools systemTools = new SystemTools(false);
 			int delayMinutesRestart = 5;
 
 			foreach (long id in chatIds)
 			{
-				await client.SendMessage(id, $"Сервер перезагрузится через {delayMinutesRestart} минут.");
+				await client.SendMessage(id, $"Сервер перезагрузится через {delayMinutesRestart} минут.\nКлавиатура скрыта.", replyMarkup: new ReplyKeyboardRemove());
 			}
 			isShutdowned = true;
 			systemTools.RestartServer(delayMinutesRestart);
@@ -300,8 +300,9 @@ namespace SystemBot
 		[Command("Выключение сервера")]
 		public static async Task ShutdownServerOperation(ITelegramBotClient client, Message message)
 		{
-			SystemTools systemTools = new SystemTools(true);
+			SystemTools systemTools = new SystemTools(false);
 			int delayMinutesShutDown = 5;
+
 			foreach (long id in chatIds)
 			{
 				await client.SendMessage(id, $"Сервер выключится через {delayMinutesShutDown} минут.\nКлавиатура скрыта.", replyMarkup: new ReplyKeyboardRemove());
