@@ -144,7 +144,7 @@ namespace SystemBot
 		}
 
 		// Атрибут для пометки методов-обработчиков
-		[AttributeUsage(AttributeTargets.Method)]
+		[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
 		public class CommandAttribute : Attribute
 		{
 			public string Name { get; }
@@ -155,6 +155,7 @@ namespace SystemBot
 			}
 		}
 
+		[Command("/sys_start")]
 		[Command("/sys_start@system_ultra_bot")]
 		public static async Task HandleStartCommand(ITelegramBotClient client, Message message)
 		{
