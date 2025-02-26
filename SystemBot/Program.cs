@@ -138,8 +138,14 @@ namespace SystemBot
 
 			foreach (var method in methods)
 			{
-				var attribute = (CommandAttribute)method.GetCustomAttributes(typeof(CommandAttribute), false).First();
-				_commands[attribute.Name] = (Func<ITelegramBotClient, Message, Task>)Delegate.CreateDelegate(typeof(Func<ITelegramBotClient, Message, Task>), method);
+				// Получаем все атрибуты [Command] для метода
+				var attributes = method.GetCustomAttributes(typeof(CommandAttribute), false);
+
+				// Регистрируем каждый атрибут
+				foreach (CommandAttribute attribute in attributes)
+				{
+					_commands[attribute.Name] = (Func<ITelegramBotClient, Message, Task>)Delegate.CreateDelegate(typeof(Func<ITelegramBotClient, Message, Task>), method);
+				}
 			}
 		}
 
