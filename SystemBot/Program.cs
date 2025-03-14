@@ -430,7 +430,7 @@ namespace SystemBot
 		{
 			foreach (long id in chatIDs)
 			{
-				await client.SendMessage(id, "Бот выключается.", replyMarkup: new ReplyKeyboardRemove());
+				await client.SendMessage(id, "Системный бот выключается.", replyMarkup: new ReplyKeyboardRemove());
 			}
 		}
 
