@@ -25,6 +25,8 @@ namespace SystemBot
 			}
 		}
 		private static int ADMIN_ID { get; set; } = 0;
+		private static double HOUR_TIME { get; set; } = 8;
+		private static string filePathChatID { get; set; } = "chatIDs.txt";
 
 		private const string filePathConfig = "config.ini";
 		private static string configTextDefault = string.Empty;
@@ -41,6 +43,7 @@ namespace SystemBot
 				IniData data = parser.ReadFile(filePathConfig);
 				_token = data["Settings"]["TOKEN"];
 				ADMIN_ID = Convert.ToInt32(data["Settings"]["ADMIN_ID"]);
+				HOUR_TIME = Convert.ToDouble(data["Settings"]["HOUR_TIME"]);
 			}
 			else
 			{
@@ -50,14 +53,17 @@ namespace SystemBot
 				data.Sections.AddSection("Settings");
 				data["Settings"]["TOKEN"] = _token.ToString();
 				data["Settings"]["ADMIN_ID"] = ADMIN_ID.ToString();
+				data["Settings"]["HOUR_TIME"] = HOUR_TIME.ToString();
 
 				parser.WriteFile(filePathConfig, data);
 			}
 
-			configTextDefault = $"TOKEN = [{_token}]\r\n" +
-								$"ADMIN_ID = [{ADMIN_ID}]";
+			configTextDefault = $"TOKEN = [{_token}]\n" +
+								$"ADMIN_ID = [{ADMIN_ID}]\n" +
+								$"HOUR_TIME = [{HOUR_TIME}]";
 		}
 
+		private static HashSet<long> chatIDs = new HashSet<long>();
 		static async Task Main(string[] args)
 		{
 			logger.Info($"Starting...");
@@ -82,6 +88,31 @@ namespace SystemBot
 			bot.Start();
 			bot.OnMessage += OnMessage;
 
+			chatIDs = GetIDs();
+			System.Timers.Timer timer = new System.Timers.Timer(HOUR_TIME * 3600.0 * 1000.0); // Таймер с интервалом в N часов (N * 3600 * 1000 миллисекунд)
+			if (Host.BotClient != null)
+			{
+				foreach (long id in chatIDs)
+				{
+					await Host.BotClient.SendMessage(id, "Сервер был запущен. Системный бот активен.");
+				}
+
+				timer.Elapsed += async (sender, e) =>
+				{
+					SystemTools systemTools = new SystemTools();
+					string message = $"CPU Load: {systemTools.GetCpuLoad()}\n" +
+									 $"CPU Temperature: {systemTools.GetCpuTemperature()}\n" +
+									 $"RAM Usage: {systemTools.GetRamUsage()}\n" +
+									 $"DISK Usage: {systemTools.GetDiskUsage()}";
+					foreach (long id in chatIDs)
+					{
+						await Host.BotClient.SendMessage(id, message);
+					}
+				};
+				timer.AutoReset = true; // Повторять каждые N часов
+				timer.Enabled = true;
+			}
+
 			// Бесконечный цикл для работы демона
 			while (true)
 			{
@@ -91,7 +122,6 @@ namespace SystemBot
 			//await Task.CompletedTask;
 		}
 
-		private static HashSet<long> chatIds = new HashSet<long>();
 		private static async void OnMessage(ITelegramBotClient client, Update update)
 		{
 			try
@@ -101,8 +131,7 @@ namespace SystemBot
 					return;
 				}
 
-
-				chatIds.Add(update.Message.Chat.Id);
+				chatIDs.Add(update.Message.Chat.Id);
 				if (update.Message.Text != null && _commands.TryGetValue(update.Message.Text, out var commandHandler))
 				{
 					if (!isShutdowned)
@@ -191,6 +220,7 @@ namespace SystemBot
 						{
 							new KeyboardButton("Перезагрузка сервера"),
 							new KeyboardButton("Выключение сервера"),
+							new KeyboardButton("Удалить файл чатов"),
 						},
 						new KeyboardButton[]
 						{
@@ -293,29 +323,57 @@ namespace SystemBot
 		[Command("Перезагрузка сервера")]
 		public static async Task RestartServerOperation(ITelegramBotClient client, Message message)
 		{
-			SystemTools systemTools = new SystemTools(false);
-			int delayMinutesRestart = 5;
-
-			foreach (long id in chatIds)
+			if (message.From != null && message.From.Id == ADMIN_ID)
 			{
-				await client.SendMessage(id, $"Сервер перезагрузится через {delayMinutesRestart} минут.\nКлавиатура скрыта.", replyMarkup: new ReplyKeyboardRemove());
+				SystemTools systemTools = new SystemTools(false);
+				int delayMinutesRestart = 5;
+
+				foreach (long id in chatIDs)
+				{
+					await client.SendMessage(id, $"Сервер перезагрузится через {delayMinutesRestart} минут.\nКлавиатура скрыта.", replyMarkup: new ReplyKeyboardRemove());
+				}
+				isShutdowned = true;
+				systemTools.RestartServer(delayMinutesRestart);
 			}
-			isShutdowned = true;
-			systemTools.RestartServer(delayMinutesRestart);
+			else
+			{
+				await client.SendMessage(message.Chat.Id, $"Операция отклонена. Пользователь не является администратором.");
+			}
 		}
 
 		[Command("Выключение сервера")]
 		public static async Task ShutdownServerOperation(ITelegramBotClient client, Message message)
 		{
-			SystemTools systemTools = new SystemTools(false);
-			int delayMinutesShutDown = 5;
-
-			foreach (long id in chatIds)
+			if (message.From != null && message.From.Id == ADMIN_ID)
 			{
-				await client.SendMessage(id, $"Сервер выключится через {delayMinutesShutDown} минут.\nКлавиатура скрыта.", replyMarkup: new ReplyKeyboardRemove());
+				SystemTools systemTools = new SystemTools(false);
+				int delayMinutesShutDown = 5;
+
+				foreach (long id in chatIDs)
+				{
+					await client.SendMessage(id, $"Сервер выключится через {delayMinutesShutDown} минут.\nКлавиатура скрыта.", replyMarkup: new ReplyKeyboardRemove());
+				}
+				isShutdowned = true;
+				systemTools.ShutdownServer(delayMinutesShutDown);
 			}
-			isShutdowned = true;
-			systemTools.ShutdownServer(delayMinutesShutDown);
+			else
+			{
+				await client.SendMessage(message.Chat.Id, $"Операция отклонена. Пользователь не является администратором.");
+			}
+		}
+
+		[Command("Удалить файл чатов")]
+		public static async Task DeleteFileChatIDs(ITelegramBotClient client, Message message)
+		{
+			if (message.From != null && message.From.Id == ADMIN_ID)
+			{
+				File.Delete(filePathChatID);
+				await client.SendMessage(message.Chat.Id, $"Файл чатов удален.");
+			}
+			else
+			{
+				await client.SendMessage(message.Chat.Id, $"Операция отклонена. Пользователь не является администратором.");
+			}
 		}
 
 		[Command("Выход")]
@@ -326,9 +384,51 @@ namespace SystemBot
 
 		//----------------------------------------- SYSTEM -----------------------------------------
 
+		private static void SaveIDs(HashSet<long> chatID)
+		{
+			using (StreamWriter writer = new StreamWriter(filePathChatID, false))
+			{
+				foreach (long id in chatID)
+				{
+					writer.WriteLine(id);
+				}
+			}
+		}
+
+		private static HashSet<long> GetIDs()
+		{
+			HashSet<long> result = new HashSet<long>();
+
+			if (File.Exists(filePathChatID))
+			{
+				// Открываем файл для чтения
+				using (StreamReader reader = new StreamReader(filePathChatID))
+				{
+					string line;
+					// Читаем файл построчно
+					while (!string.IsNullOrEmpty((line = reader.ReadLine())))
+					{
+						// Пытаемся преобразовать строку в long
+						if (long.TryParse(line, out long id))
+						{
+							// Если преобразование успешно, добавляем в HashSet
+							result.Add(id);
+						}
+						else
+						{
+							// Если строка не является числом, можно вывести предупреждение или проигнорировать
+							Console.WriteLine($"Предупреждение: строка '{line}' не является числом и будет пропущена.");
+						}
+					}
+				}
+			}
+
+			return result;
+		}
+
 		public static async Task RemoveKeyboardForAll(ITelegramBotClient client)
 		{
-			foreach (long id in chatIds)
+			foreach (long id in chatIDs)
 			{
 				await client.SendMessage(id, "Бот выключается.", replyMarkup: new ReplyKeyboardRemove());
 			}
@@ -348,6 +448,7 @@ namespace SystemBot
 
 			try
 			{
+				SaveIDs(chatIDs);
 				if (Host.BotClient != null)
 					await RemoveKeyboardForAll(Host.BotClient);
 			}
@@ -374,6 +475,7 @@ namespace SystemBot
 
 			try
 			{
+				SaveIDs(chatIDs);
 				if (Host.BotClient != null)
 					await RemoveKeyboardForAll(Host.BotClient);
 			}
@@ -399,6 +501,7 @@ namespace SystemBot
 
 			try
 			{
+				SaveIDs(chatIDs);
 				if (Host.BotClient != null)
 					await RemoveKeyboardForAll(Host.BotClient);
 			}
