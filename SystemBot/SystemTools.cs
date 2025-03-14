@@ -47,6 +47,19 @@ namespace SystemBot
 		}
 
 		/// <summary>
+		/// Получает время работы сервера.
+		/// </summary>
+		/// <returns></returns>
+		public string GetUptime()
+		{
+			string output = ExecuteCommand("uptime -p");
+
+			logger.Info($"Uptime: {output}.");
+
+			return output;
+		}
+
+		/// <summary>
 		/// Получает текущую загрузку CPU в процентах.
 		/// </summary>
 		/// <returns>Загрузка CPU в процентах (от 0 до 100).</returns>

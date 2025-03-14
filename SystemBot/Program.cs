@@ -94,16 +94,14 @@ namespace SystemBot
 			{
 				foreach (long id in chatIDs)
 				{
+					string message = GetSystemInfo();
 					await Host.BotClient.SendMessage(id, "Сервер был запущен. Системный бот активен.");
+					await Host.BotClient.SendMessage(id, message);
 				}
 
 				timer.Elapsed += async (sender, e) =>
 				{
-					SystemTools systemTools = new SystemTools();
-					string message = $"CPU Load: {systemTools.GetCpuLoad()}\n" +
-									 $"CPU Temperature: {systemTools.GetCpuTemperature()}\n" +
-									 $"RAM Usage: {systemTools.GetRamUsage()}\n" +
-									 $"DISK Usage: {systemTools.GetDiskUsage()}";
+					string message = GetSystemInfo();
 					foreach (long id in chatIDs)
 					{
 						await Host.BotClient.SendMessage(id, message);
@@ -383,6 +381,26 @@ namespace SystemBot
 		}
 
 		//----------------------------------------- SYSTEM -----------------------------------------
+
+		public static string GetSystemInfo()
+		{
+			DateTime now = DateTime.Now;
+			DateTime startOfDay = now.Date;
+			DateTime endOfDay = startOfDay.AddDays(1);
+			double progressOfDay = (now - startOfDay).TotalSeconds / (endOfDay - startOfDay).TotalSeconds * 100;
+
+			SystemTools systemTools = new SystemTools();
+			string result = $"Uptime: {systemTools.GetUptime()}\n" +
+							$"CPU Load: {Math.Round(systemTools.GetCpuLoad(), 0)}%\n" +
+							$"CPU Temperature: {Math.Round(systemTools.GetCpuTemperature(), 0)}°C\n" +
+							$"RAM Usage: {Math.Round(systemTools.GetRamUsage(), 0)}%\n" +
+							$"DISK Usage: {Math.Round(systemTools.GetDiskUsage(), 0)}%\n" +
+							$"Today's Date: {now.ToShortDateString()}\n" +
+							$"Day of the Week: {now.DayOfWeek}\n" +
+							$"Progress of the Day: {Math.Round(progressOfDay, 2)}%";
+
+			return result;
+		}
 
 		private static void SaveIDs(HashSet<long> chatID)
 		{

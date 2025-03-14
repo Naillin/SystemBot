@@ -49,6 +49,5 @@ namespace SystemBot
 			OnMessage?.Invoke(client, update);
 			await Task.CompletedTask;
 		}
-
 	}
 }
