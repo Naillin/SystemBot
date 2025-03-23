@@ -7,6 +7,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 using static SystemBot.SystemTools;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Globalization;
 
 namespace SystemBot
 {
@@ -274,7 +275,7 @@ namespace SystemBot
 		public static async Task CpuTempOperation(ITelegramBotClient client, Message message)
 		{
 			SystemTools systemTools = new SystemTools();
-			double cpuTemp = Math.Round(systemTools.GetCpuTemperature(), 0);
+			double cpuTemp = Math.Round(systemTools.GetCpuTemperature(), 2);
 			await client.SendMessage(message.Chat.Id, $"Температура CPU составляет {cpuTemp}°C.");
 		}
 
@@ -376,7 +377,8 @@ namespace SystemBot
 		}
 
 		//----------------------------------------- SYSTEM -----------------------------------------
-
+		// Устанавливаем русскую культуру
+		private static CultureInfo? russianCulture;
 		public static string GetSystemInfo()
 		{
 			DateTime now = DateTime.Now;
@@ -385,12 +387,14 @@ namespace SystemBot
 			double progressOfDay = (now - startOfDay).TotalSeconds / (endOfDay - startOfDay).TotalSeconds * 100;
 
 			SystemTools systemTools = new SystemTools();
+			russianCulture = new CultureInfo("ru-RU");
+
 			string result = $"Время работы: {systemTools.GetUptime()}\n" +
 							$"CPU Load: {Math.Round(systemTools.GetCpuLoad(), 2)}%\n" +
-							$"CPU Temperature: {Math.Round(systemTools.GetCpuTemperature(), 0)}°C\n" +
+							$"CPU Temperature: {Math.Round(systemTools.GetCpuTemperature(), 2)}°C\n" +
 							$"RAM Usage: {Math.Round(systemTools.GetRamUsage(), 2)}%\n" +
 							$"DISK Usage: {Math.Round(systemTools.GetDiskUsage(), 2)}%\n" +
-							$"Дата: {now:dd MMMM yyyy}\n" +
+							$"Дата: {now.ToString("dd MMMM yyyy", russianCulture)}\n" +
 							$"День недели: {GetRussianDayOfWeek(now.DayOfWeek)}\n" +
 							$"Прогресс дня: {Math.Round(progressOfDay, 2)}%";
 
@@ -488,7 +492,10 @@ namespace SystemBot
 			{
 				SaveIDs(chatIDs);
 				if (Host.BotClient != null)
+				{
+					await SendSystemInfoForAll(Host.BotClient);
 					await RemoveKeyboardForAll(Host.BotClient);
+				}	
 			}
 			catch (Exception ex)
 			{
@@ -515,7 +522,10 @@ namespace SystemBot
 			{
 				SaveIDs(chatIDs);
 				if (Host.BotClient != null)
+				{
+					await SendSystemInfoForAll(Host.BotClient);
 					await RemoveKeyboardForAll(Host.BotClient);
+				}
 			}
 			catch (Exception ex)
 			{
@@ -541,7 +551,10 @@ namespace SystemBot
 			{
 				SaveIDs(chatIDs);
 				if (Host.BotClient != null)
+				{
+					await SendSystemInfoForAll(Host.BotClient);
 					await RemoveKeyboardForAll(Host.BotClient);
+				}
 			}
 			catch (Exception ex)
 			{
