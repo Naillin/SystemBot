@@ -94,18 +94,13 @@ namespace SystemBot
 			{
 				foreach (long id in chatIDs)
 				{
-					string message = GetSystemInfo();
 					await Host.BotClient.SendMessage(id, "Сервер был запущен. Системный бот активен.");
-					await Host.BotClient.SendMessage(id, message);
 				}
+				await SendSystemInfoForAll(Host.BotClient);
 
 				timer.Elapsed += async (sender, e) =>
 				{
-					string message = GetSystemInfo();
-					foreach (long id in chatIDs)
-					{
-						await Host.BotClient.SendMessage(id, message);
-					}
+					await SendSystemInfoForAll(Host.BotClient);
 				};
 				timer.AutoReset = true; // Повторять каждые N часов
 				timer.Enabled = true;
@@ -271,7 +266,7 @@ namespace SystemBot
 		public static async Task CpuLoadOperation(ITelegramBotClient client, Message message)
 		{
 			SystemTools systemTools = new SystemTools();
-			double cpuLoad = Math.Round(systemTools.GetCpuLoad(), 0);
+			double cpuLoad = Math.Round(systemTools.GetCpuLoad(), 2);
 			await client.SendMessage(message.Chat.Id, $"CPU загружен на {cpuLoad}%.");
 		}
 
@@ -287,7 +282,7 @@ namespace SystemBot
 		public static async Task RamUsageOperation(ITelegramBotClient client, Message message)
 		{
 			SystemTools systemTools = new SystemTools();
-			double ramUsage = Math.Round(systemTools.GetRamUsage(), 0);
+			double ramUsage = Math.Round(systemTools.GetRamUsage(), 2);
 			await client.SendMessage(message.Chat.Id, $"RAM загружен на {ramUsage}%.");
 		}
 
@@ -295,7 +290,7 @@ namespace SystemBot
 		public static async Task DiskUsageOperation(ITelegramBotClient client, Message message)
 		{
 			SystemTools systemTools = new SystemTools();
-			double diskUsage = Math.Round(systemTools.GetDiskUsage(), 0);
+			double diskUsage = Math.Round(systemTools.GetDiskUsage(), 2);
 			await client.SendMessage(message.Chat.Id, $"Диск загружен на {diskUsage}%.");
 		}
 
@@ -390,16 +385,32 @@ namespace SystemBot
 			double progressOfDay = (now - startOfDay).TotalSeconds / (endOfDay - startOfDay).TotalSeconds * 100;
 
 			SystemTools systemTools = new SystemTools();
-			string result = $"Uptime: {systemTools.GetUptime()}\n" +
-							$"CPU Load: {Math.Round(systemTools.GetCpuLoad(), 0)}%\n" +
+			string result = $"Время работы: {systemTools.GetUptime()}\n" +
+							$"CPU Load: {Math.Round(systemTools.GetCpuLoad(), 2)}%\n" +
 							$"CPU Temperature: {Math.Round(systemTools.GetCpuTemperature(), 0)}°C\n" +
-							$"RAM Usage: {Math.Round(systemTools.GetRamUsage(), 0)}%\n" +
-							$"DISK Usage: {Math.Round(systemTools.GetDiskUsage(), 0)}%\n" +
-							$"Today's Date: {now.ToShortDateString()}\n" +
-							$"Day of the Week: {now.DayOfWeek}\n" +
-							$"Progress of the Day: {Math.Round(progressOfDay, 2)}%";
+							$"RAM Usage: {Math.Round(systemTools.GetRamUsage(), 2)}%\n" +
+							$"DISK Usage: {Math.Round(systemTools.GetDiskUsage(), 2)}%\n" +
+							$"Дата: {now:dd MMMM yyyy}\n" +
+							$"День недели: {GetRussianDayOfWeek(now.DayOfWeek)}\n" +
+							$"Прогресс дня: {Math.Round(progressOfDay, 2)}%";
 
 			return result;
+		}
+
+		// Метод для получения дня недели на русском
+		private static string GetRussianDayOfWeek(DayOfWeek dayOfWeek)
+		{
+			switch (dayOfWeek)
+			{
+				case DayOfWeek.Monday: return "Понедельник";
+				case DayOfWeek.Tuesday: return "Вторник";
+				case DayOfWeek.Wednesday: return "Среда";
+				case DayOfWeek.Thursday: return "Четверг";
+				case DayOfWeek.Friday: return "Пятница";
+				case DayOfWeek.Saturday: return "Суббота";
+				case DayOfWeek.Sunday: return "Воскресенье";
+				default: throw new ArgumentOutOfRangeException(nameof(dayOfWeek), dayOfWeek, null);
+			}
 		}
 
 		private static void SaveIDs(HashSet<long> chatID)
@@ -442,6 +453,15 @@ namespace SystemBot
 			}
 
 			return result;
+		}
+
+		public static async Task SendSystemInfoForAll(ITelegramBotClient client)
+		{
+			foreach (long id in chatIDs)
+			{
+				string message = GetSystemInfo();
+				await client.SendMessage(id, message);
+			}
 		}
 
 		public static async Task RemoveKeyboardForAll(ITelegramBotClient client)
