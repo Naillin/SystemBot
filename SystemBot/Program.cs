@@ -419,13 +419,29 @@ namespace SystemBot
 
 		private static void SaveIDs(HashSet<long> chatID)
 		{
-			using (StreamWriter writer = new StreamWriter(filePathChatID, false))
+			using (var stream = new FileStream(filePathChatID, FileMode.Create, FileAccess.Write))
 			{
-				foreach (long id in chatID)
+				if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
 				{
-					writer.WriteLine(id);
+					// 777
+					File.SetUnixFileMode(
+						filePathChatID,
+						UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+						UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
+						UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute
+					);
+				}
+
+				using (StreamWriter writer = new StreamWriter(stream))
+				{
+					foreach (long id in chatID)
+					{
+						writer.WriteLine(id);
+					}
 				}
 			}
+
+			logger.Info($"Файл чатов сохранен:\n{string.Join("\n", chatID)}.");
 		}
 
 		private static HashSet<long> GetIDs()
@@ -454,6 +470,8 @@ namespace SystemBot
 						}
 					}
 				}
+
+				logger.Info($"Получены id чатов:\n{string.Join("\n", result)}.");
 			}
 
 			return result;
