@@ -1,6 +1,6 @@
 # SystemBot
 
-[Russian version](README_RU.md)
+[Russian version](README.ru.md)
 
 ---
 
