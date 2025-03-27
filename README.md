@@ -1,7 +1,6 @@
 # SystemBot
 
 [Russian version](README.ru.md)
-
 ---
 
 SystemBot is a bot written using Telegram API Core. It's designed for use on Linux operating systems. The bot allows you to view basic system (server) information, additional information (optional), and interact with the system (server).
